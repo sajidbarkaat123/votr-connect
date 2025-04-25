@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Button, TextField, Typography } from "@mui/material";
-import { cardContainerStyles, headingStyles, textFieldStyles } from './utils';
+import { cardContainerStyles, headingStyles, textFieldStyles } from '@/utils/styles';
 
 interface DataSet {
     title: string;

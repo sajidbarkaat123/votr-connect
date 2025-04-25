@@ -3,7 +3,7 @@ import { Box, Button, MenuItem, Table, TableBody, TableCell, TableHead, TableRow
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { cardContainerStyles, headingStyles, labelStyles, primaryButtonStyles, subheadingStyles, textFieldStyles } from './utils';
+import { cardContainerStyles, headingStyles, labelStyles, primaryButtonStyles, subheadingStyles, textFieldStyles } from '@/utils/styles';
 
 interface TestValidateTabProps {
     baseUrl: string;

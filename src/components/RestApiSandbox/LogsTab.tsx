@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Box, Button, MenuItem, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from "@mui/material";
-import { cardContainerStyles, getStatusBgColor, getStatusColor, headingStyles, outlinedButtonStyles, primaryButtonStyles, textFieldStyles } from './utils';
+import { cardContainerStyles, getStatusBgColor, getStatusColor, headingStyles, outlinedButtonStyles, primaryButtonStyles, textFieldStyles } from '@utils/styles';
 
 interface LogEntry {
     timestamp: string;

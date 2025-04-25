@@ -2,7 +2,7 @@ import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { cardContainerStyles, headingStyles, labelStyles, primaryButtonStyles, textFieldStyles } from "./utils";
+import { cardContainerStyles, headingStyles, labelStyles, primaryButtonStyles, textFieldStyles } from "@/utils/styles";
 
 interface ConfigurationTabProps {
     baseUrl: string;

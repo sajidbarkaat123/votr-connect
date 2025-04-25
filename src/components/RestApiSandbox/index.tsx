@@ -48,7 +48,8 @@ const RestApiSandbox = () => {
         {
             label: "Logs",
             content: (
-                <LogsTab />
+                <h1>Logs</h1>
+                // <LogsTab />
             )
         },
         {
