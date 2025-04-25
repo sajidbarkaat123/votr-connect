@@ -14,10 +14,23 @@ import {
     ListItemText,
     ListItemIcon
 } from '@mui/material';
-
+import { useForm, Controller } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
 import { useParams, useNavigate } from 'react-router';
 import { ChevronLeft, Check, Close, AccessTime, Code, SystemUpdate, Description } from '@mui/icons-material';
 
+// Comment validation schema
+const commentSchema = yup.object().shape({
+    comment: yup
+        .string()
+        .required('Comment is required')
+        .min(3, 'Comment must be at least 3 characters')
+});
+
+interface CommentFormData {
+    comment: string;
+}
 
 interface ApprovalDetailProps {
     // If props are needed they can be added here
@@ -26,7 +39,20 @@ interface ApprovalDetailProps {
 const ApprovalDetail = (props: ApprovalDetailProps) => {
     const { requestId } = useParams();
     const navigate = useNavigate();
-    const [commentText, setCommentText] = useState('');
+    const [submittingComment, setSubmittingComment] = useState(false);
+
+    // React Hook Form setup for comments
+    const {
+        control,
+        handleSubmit,
+        reset,
+        formState: { errors }
+    } = useForm<CommentFormData>({
+        resolver: yupResolver(commentSchema),
+        defaultValues: {
+            comment: ''
+        }
+    });
 
     console.log(props)
     // Mock data - in a real app, this would be fetched based on the requestId
@@ -92,22 +118,24 @@ const ApprovalDetail = (props: ApprovalDetailProps) => {
     };
 
     const handleApprove = () => {
-        console.log(`Approving request ${requestId} with comment: ${commentText}`);
-        // In a real app, you would make an API call here
-        // Then navigate back or show success message
+        console.log(`Approving request ${requestId}`);
+        // In a real app, make an API call to approve the request
     };
 
     const handleReject = () => {
-        console.log(`Rejecting request ${requestId} with comment: ${commentText}`);
-        // In a real app, you would make an API call here
-        // Then navigate back or show success message
+        console.log(`Rejecting request ${requestId}`);
+        // In a real app, make an API call to reject the request
     };
 
-    const getIconForEvent = (action: string) => {
-        if (action.includes('Created')) return <Description />;
-        if (action.includes('Tests')) return <Code />;
-        if (action.includes('Review')) return <SystemUpdate />;
-        return <AccessTime />;
+    const onCommentSubmit = (data: CommentFormData) => {
+        console.log('Submitting comment:', data.comment);
+        setSubmittingComment(true);
+        // Simulate API call
+        setTimeout(() => {
+            // In a real app, make an API call to add a comment
+            setSubmittingComment(false);
+            reset({ comment: '' });
+        }, 500);
     };
 
     return (
@@ -222,25 +250,28 @@ const ApprovalDetail = (props: ApprovalDetailProps) => {
                             </List>
                         </Box>
 
-                        <Box>
+                        <Box sx={{ mb: 3 }}>
                             <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, color: '#111827', mb: 2 }}>
                                 Dependencies
                             </Typography>
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                            <List dense>
                                 {requestDetail.dependencies.map((dependency, index) => (
-                                    <Chip
-                                        key={index}
-                                        label={dependency}
-                                        sx={{
-                                            bgcolor: '#F9FAFB',
-                                            color: '#4B5563',
-                                            borderRadius: '4px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 500
-                                        }}
-                                    />
+                                    <ListItem key={index} sx={{ py: 0.5 }}>
+                                        <ListItemIcon sx={{ minWidth: '32px' }}>
+                                            <Box
+                                                sx={{
+                                                    width: 6,
+                                                    height: 6,
+                                                    borderRadius: '50%',
+                                                    bgcolor: '#9CA3AF',
+                                                    mt: 1
+                                                }}
+                                            />
+                                        </ListItemIcon>
+                                        <ListItemText primary={dependency} />
+                                    </ListItem>
                                 ))}
-                            </Box>
+                            </List>
                         </Box>
                     </Paper>
 
@@ -249,134 +280,136 @@ const ApprovalDetail = (props: ApprovalDetailProps) => {
                             Timeline
                         </Typography>
 
-                        <List>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                             {requestDetail.timelineEvents.map((event, index) => (
-                                <ListItem
-                                    key={event.id}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'flex-start',
-                                        position: 'relative',
-                                        pb: 3,
-                                        '&:last-child': {
-                                            pb: 0
-                                        }
-                                    }}
-                                >
-                                    <Box
+                                <Box key={event.id} sx={{ display: 'flex', gap: 3 }}>
+                                    <Avatar
                                         sx={{
-                                            position: 'absolute',
-                                            left: '20px',
-                                            top: 0,
-                                            bottom: 0,
-                                            width: '2px',
-                                            bgcolor: index === requestDetail.timelineEvents.length - 1 ? 'transparent' : '#E5E7EB'
+                                            width: 32,
+                                            height: 32,
+                                            bgcolor: index === 0 ? '#3B82F6' : '#9CA3AF',
+                                            fontSize: '0.75rem'
                                         }}
-                                    />
-                                    <Box sx={{ mr: 3, position: 'relative', zIndex: 1 }}>
-                                        <Avatar
-                                            sx={{
-                                                width: 40,
-                                                height: 40,
-                                                bgcolor: '#3B82F6'
-                                            }}
-                                        >
-                                            {getIconForEvent(event.action)}
-                                        </Avatar>
-                                    </Box>
+                                    >
+                                        {event.user.split(' ').map(name => name[0]).join('')}
+                                    </Avatar>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                            <Typography variant="body1" sx={{ fontWeight: 500, fontSize: '0.875rem' }}>
-                                                {event.action}
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                                            <Typography sx={{ fontWeight: 500 }}>
+                                                {event.action} by {event.user}
                                             </Typography>
-                                            <Typography sx={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                                            <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>
                                                 {event.timestamp}
                                             </Typography>
                                         </Box>
-                                        <Typography sx={{ color: '#6B7280', fontSize: '0.75rem', mb: 1 }}>
-                                            By {event.user}
+                                        <Typography sx={{ color: '#4B5563', fontSize: '0.875rem', mt: 0.5 }}>
+                                            {event.comment}
                                         </Typography>
-                                        {event.comment && (
-                                            <Typography
-                                                sx={{
-                                                    color: '#4B5563',
-                                                    fontSize: '0.75rem',
-                                                    bgcolor: '#F9FAFB',
-                                                    p: 1,
-                                                    borderRadius: '4px'
-                                                }}
-                                            >
-                                                {event.comment}
-                                            </Typography>
-                                        )}
                                     </Box>
-                                </ListItem>
+                                </Box>
                             ))}
-                        </List>
+                        </Box>
+
+                        <Divider sx={{ my: 3 }} />
+
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, color: '#111827', mb: 2 }}>
+                                Add Comment
+                            </Typography>
+                            <form onSubmit={handleSubmit(onCommentSubmit)}>
+                                <Controller
+                                    name="comment"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            fullWidth
+                                            multiline
+                                            rows={3}
+                                            placeholder="Add your comments or questions here..."
+                                            variant="outlined"
+                                            error={!!errors.comment}
+                                            helperText={errors.comment?.message}
+                                            sx={{
+                                                mb: 2,
+                                                '& .MuiOutlinedInput-root': {
+                                                    backgroundColor: '#F9FAFB',
+                                                    '&:hover fieldset': {
+                                                        borderColor: '#D1D5DB',
+                                                    },
+                                                    '&.Mui-focused fieldset': {
+                                                        borderColor: '#3B82F6',
+                                                    }
+                                                }
+                                            }}
+                                            {...field}
+                                        />
+                                    )}
+                                />
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button
+                                        type="submit"
+                                        variant="contained"
+                                        disabled={submittingComment}
+                                        sx={{
+                                            bgcolor: '#3B82F6',
+                                            color: 'white',
+                                            textTransform: 'none',
+                                            '&:hover': {
+                                                bgcolor: '#2563EB',
+                                            }
+                                        }}
+                                    >
+                                        Submit Comment
+                                    </Button>
+                                </Box>
+                            </form>
+                        </Box>
                     </Paper>
                 </Grid>
 
                 <Grid item xs={12} md={4}>
-                    <Paper sx={{ p: 4, borderRadius: '8px', mb: 3, position: 'sticky', top: 20 }}>
+                    <Paper sx={{ p: 4, borderRadius: '8px', mb: 3 }}>
                         <Typography variant="h6" sx={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', mb: 3 }}>
                             Actions
                         </Typography>
 
                         {requestDetail.status === 'Pending' && (
-                            <>
-                                <TextField
-                                    fullWidth
-                                    multiline
-                                    rows={4}
-                                    placeholder="Add a comment (optional)"
-                                    value={commentText}
-                                    onChange={(e) => setCommentText(e.target.value)}
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Check />}
+                                    onClick={handleApprove}
                                     sx={{
-                                        mb: 3,
-                                        '& .MuiOutlinedInput-root': {
-                                            '& fieldset': {
-                                                borderColor: '#E5E7EB',
-                                            },
-                                        },
+                                        bgcolor: '#22C55E',
+                                        color: 'white',
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            bgcolor: '#16A34A',
+                                        }
                                     }}
-                                />
-
-                                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-                                    <Button
-                                        fullWidth
-                                        variant="contained"
-                                        startIcon={<Check />}
-                                        onClick={handleApprove}
-                                        sx={{
-                                            bgcolor: '#22C55E',
-                                            color: 'white',
-                                            textTransform: 'none',
-                                            '&:hover': {
-                                                bgcolor: '#16A34A',
-                                            },
-                                        }}
-                                    >
-                                        Approve
-                                    </Button>
-                                    <Button
-                                        fullWidth
-                                        variant="outlined"
-                                        startIcon={<Close />}
-                                        onClick={handleReject}
-                                        sx={{
-                                            borderColor: '#EF4444',
-                                            color: '#EF4444',
-                                            textTransform: 'none',
-                                            '&:hover': {
-                                                borderColor: '#DC2626',
-                                                bgcolor: 'transparent',
-                                            },
-                                        }}
-                                    >
-                                        Reject
-                                    </Button>
-                                </Box>
-                            </>
+                                >
+                                    Approve Request
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Close />}
+                                    onClick={handleReject}
+                                    sx={{
+                                        borderColor: '#EF4444',
+                                        color: '#EF4444',
+                                        textTransform: 'none',
+                                        '&:hover': {
+                                            borderColor: '#DC2626',
+                                            bgcolor: 'transparent',
+                                        }
+                                    }}
+                                >
+                                    Reject Request
+                                </Button>
+                                <Typography sx={{ color: '#6B7280', fontSize: '0.875rem', mt: 1 }}>
+                                    Taking an action will notify the requester via email
+                                </Typography>
+                            </Box>
                         )}
 
                         {requestDetail.status !== 'Pending' && (
@@ -409,11 +442,6 @@ const ApprovalDetail = (props: ApprovalDetailProps) => {
                         <Box sx={{ mb: 1 }}>
                             <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>Estimated Downtime</Typography>
                             <Typography sx={{ fontWeight: 500 }}>None</Typography>
-                        </Box>
-
-                        <Box sx={{ mb: 1 }}>
-                            <Typography sx={{ color: '#6B7280', fontSize: '0.875rem' }}>Rollback Plan</Typography>
-                            <Typography sx={{ fontWeight: 500 }}>Automated rollback available</Typography>
                         </Box>
                     </Paper>
                 </Grid>
