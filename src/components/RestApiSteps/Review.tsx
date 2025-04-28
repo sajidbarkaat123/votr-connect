@@ -1,14 +1,14 @@
 import React from 'react';
 import { Box, Typography, Button } from "@mui/material";
-import { BasicInfoFormData, SchemaFormData } from './types';
+import { BasicInfoFormData, SchemaFormData, AuthFormData } from './types';
 
 interface ReviewProps {
     basicInfo: BasicInfoFormData | null;
-    authMethod: string;
+    auth: AuthFormData | null;
     dataSchema: SchemaFormData | null;
 }
 
-const Review: React.FC<ReviewProps> = ({ basicInfo, authMethod, dataSchema }) => (
+const Review: React.FC<ReviewProps> = ({ basicInfo, auth, dataSchema }) => (
     <Box>
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
             Review Your Configuration
@@ -34,6 +34,15 @@ const Review: React.FC<ReviewProps> = ({ basicInfo, authMethod, dataSchema }) =>
                     <Typography variant="body2" sx={{ mb: 1 }}>
                         Base URL: {basicInfo.baseUrl}
                     </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                        REST Method: {basicInfo.restMethod}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                        Environment: {basicInfo.environment}
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                        Status: {basicInfo.isActive ? 'Active' : 'Inactive'}
+                    </Typography>
                 </>
             ) : (
                 <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
@@ -46,9 +55,42 @@ const Review: React.FC<ReviewProps> = ({ basicInfo, authMethod, dataSchema }) =>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                 Authentication
             </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Method: {authMethod === 'oauth2' ? 'OAuth 2.0 (Client Credentials)' : 'API Key'}
-            </Typography>
+            {auth ? (
+                <>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                        Method: {auth.authMethod === 'oauth2' ? 'OAuth 2.0' : 'API Key'}
+                    </Typography>
+                    {auth.authMethod === 'oauth2' && (
+                        <>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                Grant Type: {auth.grantType === 'client_credentials' ? 'Client Credentials' : 'Authorization Code'}
+                            </Typography>
+                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                Token URL: {auth.tokenUrl}
+                            </Typography>
+                            {auth.scopes && (
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    Scopes: {auth.scopes}
+                                </Typography>
+                            )}
+                            {auth.redirectUri && (
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                    Redirect URI: {auth.redirectUri}
+                                </Typography>
+                            )}
+                        </>
+                    )}
+                    {auth.authMethod === 'apikey' && (
+                        <Typography variant="body2" sx={{ mb: 1 }}>
+                            Header Name: {auth.headerName}
+                        </Typography>
+                    )}
+                </>
+            ) : (
+                <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+                    Authentication information not available
+                </Typography>
+            )}
             <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
         </Box>
         <Box sx={{ mb: 3 }}>

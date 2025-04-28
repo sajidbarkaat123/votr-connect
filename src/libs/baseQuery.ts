@@ -16,6 +16,7 @@ export const prepareHeaders = (
     return headers;
 };
 
+console.log(baseURL, "baseURL");
 const baseQuery = fetchBaseQuery({
     baseUrl: `${baseURL}/`,
     prepareHeaders,

@@ -5,7 +5,26 @@ export const basicInfoSchema = yup.object().shape({
     integrationName: yup.string().required('Integration name is required'),
     dataFormat: yup.string().required('Data format is required'),
     updateFrequency: yup.string().required('Update frequency is required'),
-    baseUrl: yup.string().url('Please enter a valid URL').required('Base URL is required')
+    baseUrl: yup.string().url('Please enter a valid URL').required('Base URL is required'),
+    restMethod: yup.string().required('REST method is required'),
+    environment: yup.string().required('Environment is required'),
+    isActive: yup.boolean().default(false),
+    queryParams: yup.object().shape({
+        limit: yup.object().shape({
+            enabled: yup.boolean(),
+            value: yup.number().when('enabled', {
+                is: true,
+                then: schema => schema.min(1, 'Limit must be at least 1').required('Limit value is required')
+            })
+        }),
+        offset: yup.object().shape({
+            enabled: yup.boolean(),
+            value: yup.number().when('enabled', {
+                is: true,
+                then: schema => schema.min(0, 'Offset must be at least 0').required('Offset value is required')
+            })
+        })
+    })
 });
 
 export type BasicInfoFormData = yup.InferType<typeof basicInfoSchema>;
@@ -32,12 +51,12 @@ export const authSchema = yup.object().shape({
     scopes: yup.string(),
 
     // Client Credentials fields
-    clientId: yup.string().when(['authMethod', 'grantType'], {
-        is: (authMethod: string, grantType: string) => authMethod === 'oauth2',
+    clientId: yup.string().when(['authMethod'], {
+        is: (authMethod: string) => authMethod === 'oauth2',
         then: (schema) => schema.required('Client ID is required')
     }),
-    clientSecret: yup.string().when(['authMethod', 'grantType'], {
-        is: (authMethod: string, grantType: string) => authMethod === 'oauth2',
+    clientSecret: yup.string().when(['authMethod'], {
+        is: (authMethod: string) => authMethod === 'oauth2',
         then: (schema) => schema.required('Client Secret is required')
     }),
 
@@ -46,9 +65,14 @@ export const authSchema = yup.object().shape({
         is: (authMethod: string, grantType: string) => authMethod === 'oauth2' && grantType === 'authorization_code',
         then: (schema) => schema.url('Please enter a valid URL').required('Authorization URL is required')
     }),
+
+    // Redirect URI - required for authorization_code, optional but validated if provided for client_credentials
     redirectUri: yup.string().when(['authMethod', 'grantType'], {
         is: (authMethod: string, grantType: string) => authMethod === 'oauth2' && grantType === 'authorization_code',
         then: (schema) => schema.url('Please enter a valid URL').required('Redirect URI is required')
+    }).when(['authMethod', 'grantType'], {
+        is: (authMethod: string, grantType: string) => authMethod === 'oauth2' && grantType === 'client_credentials',
+        then: (schema) => schema.url('Please enter a valid URL').notRequired()
     }),
 
     // API Key fields
@@ -67,6 +91,7 @@ export type AuthFormData = yup.InferType<typeof authSchema>;
 // Export interface for Authentication component ref
 export interface AuthenticationRef {
     isValid: () => boolean;
+    getData: () => AuthFormData | null;
 }
 
 // Schema form schema
@@ -94,6 +119,6 @@ export interface DataSchemaRef {
 // Review component props
 export interface ReviewProps {
     basicInfo: BasicInfoFormData | null;
-    authMethod: string;
+    auth: AuthFormData | null;
     dataSchema: SchemaFormData | null;
 } 

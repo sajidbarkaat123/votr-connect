@@ -7,6 +7,7 @@ import { FileSettingsHandle, FileSettingsData } from '@/components/FileUploadSte
 import { ConnectionHandle, ConnectionData } from '@/components/FileUploadSteps/Connection';
 import { ScheduleHandle, ScheduleData } from '@/components/FileUploadSteps/Schedule';
 import useMessage from '@/hooks/useMessage';
+import { useFileUploadIntegrationMutation } from '@/services/integration-catalog';
 
 const steps = ['File Settings', 'Connection', 'Schedule', 'Review'];
 
@@ -24,6 +25,8 @@ const FileUploadIntegration = () => {
     const fileSettingsRef = useRef<FileSettingsHandle>(null);
     const connectionRef = useRef<ConnectionHandle>(null);
     const scheduleRef = useRef<ScheduleHandle>(null);
+
+    const [fileUploadIntegration, { isLoading }] = useFileUploadIntegrationMutation();
 
     const handleNext = async () => {
         // If we're on the last step, handle form submission
@@ -58,17 +61,76 @@ const FileUploadIntegration = () => {
         }
     };
 
-    const handleSubmit = () => {
-        // Show success message
-        showSnackbar(
-            'File upload integration created successfully!',
-            'Your integration will begin processing files according to the schedule you defined.',
-            'success',
-            5000
-        );
+    const handleSubmit = async () => {
+        const basePayload = {
+            name: formData.fileSettings?.integrationName,
+            fileFormat: formData.fileSettings?.fileFormat,
+            fileNamePattern: formData.fileSettings?.fileNamingPattern,
+            isHeaderRowIncluded: formData.fileSettings?.includeHeaderRow,
+            transferFrequency: formData.schedule?.frequency,
+            timeOfDay: formData.schedule?.time,
+            timeZone: formData.schedule?.timezone,
+            afterSuccessfulTransferAction: "Archive",
+            afterFailedTransferAction: "Archive",
+        };
 
-        // Navigate back to integration catalog page
-        navigate('/integration-catalog');
+        let payload;
+
+        if (formData.connection?.connectionType === 'SFTP') {
+            payload = {
+                ...basePayload,
+                url: formData.connection.sftp?.host,
+                ftp: {
+                    host: formData.connection.sftp?.host,
+                    port: formData.connection.sftp?.port,
+                    username: formData.connection.sftp?.username,
+                    type: formData.connection.sftp?.type,
+                    ftpAuthentication: {
+                        type: formData.connection.sftp?.ftpAuthentication.type,
+                        password: formData.connection.sftp?.ftpAuthentication.password,
+                        sshKey: formData.connection.sftp?.ftpAuthentication.sshKey,
+                        passphrase: formData.connection.sftp?.ftpAuthentication.passphrase
+                    },
+                }
+            };
+        } else if (formData.connection?.connectionType === 'S3') {
+            payload = {
+                ...basePayload,
+                url: `s3://${formData.connection.s3?.bucketName}/${formData.connection.s3?.folderPath || ''}`,
+                amazonS3Details: {
+                    region: formData.connection.s3?.region,
+                    bucketName: formData.connection.s3?.bucketName,
+                    folderPath: formData.connection.s3?.folderPath || '',
+                    amazonS3Authentication: {
+                        authenticationMethod: formData.connection.s3?.amazonS3Authentication.authenticationMethod,
+                        ARN: formData.connection.s3?.amazonS3Authentication.ARN,
+                        accessKey: formData.connection.s3?.amazonS3Authentication.accessKey,
+                        secretKey: formData.connection.s3?.amazonS3Authentication.secretKey
+                    }
+                }
+            };
+        }
+        const response = await fileUploadIntegration(payload);
+
+        if (response.error) {
+            showSnackbar(
+                'Failed to create file upload integration',
+                'Please check your connection details and try again.',
+                'error',
+                5000
+            );
+        } else {
+            // Show success message
+            showSnackbar(
+                'File upload integration created successfully!',
+                'Your integration will begin processing files according to the schedule you defined.',
+                'success',
+                5000
+            );
+
+            // Navigate back to integration catalog page
+            navigate('/integration-catalog');
+        }
     };
 
     const handlePrevious = () => {

@@ -4,18 +4,24 @@ import { useForm, Controller } from 'react-hook-form';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 // Define the type for different connection types
-export type ConnectionType = 'SFTP' | 'FTPS' | 'S3';
+export type ConnectionType = 'SFTP' /* | 'FTPS' */ | 'S3';
 
 // Interface for the different connection data types
 export interface SFTPData {
     host: string;
     port: number;
     username: string;
-    authenticationType: 'SSH Key' | 'Password';
-    password?: string;
-    sshKey?: string;
+    type: string;
+    ftpAuthentication: {
+        type: string;
+        password?: string;
+        sshKey?: string;
+        passphrase?: string;
+    };
 }
 
+// Commented out but preserved for future use
+/* 
 export interface FTPSData {
     host: string;
     port: number;
@@ -23,21 +29,24 @@ export interface FTPSData {
     password: string;
     encryption: 'Implicit' | 'Explicit';
 }
+*/
 
 export interface S3Data {
     region: string;
     bucketName: string;
     folderPath?: string;
-    authMethod: 'IAM Role' | 'Access Key';
-    arn?: string;
-    accessKey?: string;
-    secretKey?: string;
+    amazonS3Authentication: {
+        authenticationMethod: string;
+        ARN?: string;
+        accessKey?: string;
+        secretKey?: string;
+    };
 }
 
 export interface ConnectionData {
     connectionType: ConnectionType;
     sftp?: SFTPData;
-    ftps?: FTPSData;
+    // ftps?: FTPSData;
     s3?: S3Data;
 }
 
@@ -53,12 +62,7 @@ interface ConnectionProps {
 // SFTP Settings Component
 const SFTPSettings = forwardRef<any, { control: any, errors: any, watch: any }>((props, ref) => {
     const { control, errors, watch } = props;
-    const authenticationType = watch('sftp.authenticationType');
-
-    const handleTestConnection = () => {
-        // Mock implementation of connection test
-        alert('Testing SFTP connection... This would connect to the server in a real implementation.');
-    };
+    const authenticationType = watch('sftp.ftpAuthentication.type');
 
     return (
         <Grid container spacing={3}>
@@ -104,6 +108,26 @@ const SFTPSettings = forwardRef<any, { control: any, errors: any, watch: any }>(
             </Grid>
             <Grid item xs={6}>
                 <Controller
+                    name="sftp.type"
+                    control={control}
+                    rules={{ required: "Type is required" }}
+                    render={({ field }) => (
+                        <FormControl fullWidth error={!!errors.sftp?.type}>
+                            <InputLabel>Connection Type</InputLabel>
+                            <Select {...field}>
+                                <MenuItem value="SFTP">SFTP</MenuItem>
+                                <MenuItem value="FTP">FTP</MenuItem>
+                                <MenuItem value="FTPS">FTPS</MenuItem>
+                            </Select>
+                            {errors.sftp?.type && (
+                                <FormHelperText>{errors.sftp?.type?.message}</FormHelperText>
+                            )}
+                        </FormControl>
+                    )}
+                />
+            </Grid>
+            <Grid item xs={6}>
+                <Controller
                     name="sftp.username"
                     control={control}
                     rules={{ required: "Username is required" }}
@@ -121,18 +145,18 @@ const SFTPSettings = forwardRef<any, { control: any, errors: any, watch: any }>(
             </Grid>
             <Grid item xs={6}>
                 <Controller
-                    name="sftp.authenticationType"
+                    name="sftp.ftpAuthentication.type"
                     control={control}
                     rules={{ required: "Authentication type is required" }}
                     render={({ field }) => (
-                        <FormControl fullWidth error={!!errors.sftp?.authenticationType}>
+                        <FormControl fullWidth error={!!errors.sftp?.ftpAuthentication?.type}>
                             <InputLabel>Authentication</InputLabel>
                             <Select {...field}>
                                 <MenuItem value="SSH Key">SSH Key</MenuItem>
                                 <MenuItem value="Password">Password</MenuItem>
                             </Select>
-                            {errors.sftp?.authenticationType && (
-                                <FormHelperText>{errors.sftp?.authenticationType?.message}</FormHelperText>
+                            {errors.sftp?.ftpAuthentication?.type && (
+                                <FormHelperText>{errors.sftp?.ftpAuthentication?.type?.message}</FormHelperText>
                             )}
                         </FormControl>
                     )}
@@ -143,7 +167,7 @@ const SFTPSettings = forwardRef<any, { control: any, errors: any, watch: any }>(
             {authenticationType === 'Password' && (
                 <Grid item xs={12}>
                     <Controller
-                        name="sftp.password"
+                        name="sftp.ftpAuthentication.password"
                         control={control}
                         rules={{ required: "Password is required" }}
                         render={({ field }) => (
@@ -153,8 +177,8 @@ const SFTPSettings = forwardRef<any, { control: any, errors: any, watch: any }>(
                                 label="Password"
                                 type="password"
                                 required
-                                error={!!errors.sftp?.password}
-                                helperText={errors.sftp?.password?.message}
+                                error={!!errors.sftp?.ftpAuthentication?.password}
+                                helperText={errors.sftp?.ftpAuthentication?.password?.message}
                             />
                         )}
                     />
@@ -162,67 +186,76 @@ const SFTPSettings = forwardRef<any, { control: any, errors: any, watch: any }>(
             )}
 
             {authenticationType === 'SSH Key' && (
-                <Grid item xs={12}>
-                    <Controller
-                        name="sftp.sshKey"
-                        control={control}
-                        rules={{ required: "SSH Key is required" }}
-                        render={({ field }) => (
-                            <TextField
-                                {...field}
-                                fullWidth
-                                label="SSH Key"
-                                multiline
-                                rows={4}
-                                required
-                                error={!!errors.sftp?.sshKey}
-                                helperText={errors.sftp?.sshKey?.message}
-                                placeholder="Paste your private key here or upload a file"
-                            />
-                        )}
-                    />
-                    <Button
-                        variant="outlined"
-                        component="label"
-                        size="small"
-                        sx={{ mt: 1 }}
-                    >
-                        Upload Key File
-                        <input
-                            type="file"
-                            hidden
-                            accept=".pem,.key,.ppk"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                    const reader = new FileReader();
-                                    reader.onload = (event) => {
-                                        const content = event.target?.result as string;
-                                        // You'll need to set the field value here
-                                        // field.onChange(content);
-                                    };
-                                    reader.readAsText(file);
-                                }
-                            }}
+                <>
+                    <Grid item xs={12}>
+                        <Controller
+                            name="sftp.ftpAuthentication.sshKey"
+                            control={control}
+                            rules={{ required: "SSH Key is required" }}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    fullWidth
+                                    label="SSH Key"
+                                    multiline
+                                    rows={4}
+                                    required
+                                    error={!!errors.sftp?.ftpAuthentication?.sshKey}
+                                    helperText={errors.sftp?.ftpAuthentication?.sshKey?.message}
+                                    placeholder="Paste your private key here or upload a file"
+                                />
+                            )}
                         />
-                    </Button>
-                </Grid>
+                        <Button
+                            variant="outlined"
+                            component="label"
+                            size="small"
+                            sx={{ mt: 1 }}
+                        >
+                            Upload Key File
+                            <input
+                                type="file"
+                                hidden
+                                accept=".pem,.key,.ppk"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (event) => {
+                                            const content = event.target?.result as string;
+                                            // You'll need to set the field value here
+                                            // field.onChange(content);
+                                        };
+                                        reader.readAsText(file);
+                                    }
+                                }}
+                            />
+                        </Button>
+                    </Grid>
+                    <Grid item xs={12}>
+                        <Controller
+                            name="sftp.ftpAuthentication.passphrase"
+                            control={control}
+                            render={({ field }) => (
+                                <TextField
+                                    {...field}
+                                    fullWidth
+                                    label="Passphrase (Optional)"
+                                    type="password"
+                                    error={!!errors.sftp?.ftpAuthentication?.passphrase}
+                                    helperText={errors.sftp?.ftpAuthentication?.passphrase?.message}
+                                />
+                            )}
+                        />
+                    </Grid>
+                </>
             )}
-
-            <Grid item xs={12}>
-                <Button
-                    variant="outlined"
-                    onClick={handleTestConnection}
-                    sx={{ mt: 2 }}
-                >
-                    Test Connection
-                </Button>
-            </Grid>
         </Grid>
     );
 });
 
-// FTPS Settings Component
+// FTPS Settings Component - Commented out but preserved for future use
+/*
 const FTPSSettings = forwardRef<any, { control: any, errors: any }>((props, ref) => {
     const { control, errors } = props;
 
@@ -339,11 +372,12 @@ const FTPSSettings = forwardRef<any, { control: any, errors: any }>((props, ref)
         </Grid>
     );
 });
+*/
 
 // Amazon S3 Settings Component
 const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any }>((props, ref) => {
     const { control, errors, watch } = props;
-    const authMethod = watch('s3.authMethod');
+    const authMethod = watch('s3.amazonS3Authentication.authenticationMethod');
 
     // Validate ARN format
     const validateARN = (value: string) => {
@@ -451,18 +485,18 @@ const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any
             </Grid>
             <Grid item xs={6}>
                 <Controller
-                    name="s3.authMethod"
+                    name="s3.amazonS3Authentication.authenticationMethod"
                     control={control}
                     rules={{ required: "Authentication method is required" }}
                     render={({ field }) => (
-                        <FormControl fullWidth error={!!errors.s3?.authMethod} sx={{ mb: 2 }}>
+                        <FormControl fullWidth error={!!errors.s3?.amazonS3Authentication?.authenticationMethod} sx={{ mb: 2 }}>
                             <InputLabel>Authentication Method</InputLabel>
                             <Select {...field}>
                                 <MenuItem value="IAM Role">IAM Role</MenuItem>
                                 <MenuItem value="Access Key">Access Key</MenuItem>
                             </Select>
-                            {errors.s3?.authMethod && (
-                                <FormHelperText>{errors.s3?.authMethod?.message}</FormHelperText>
+                            {errors.s3?.amazonS3Authentication?.authenticationMethod && (
+                                <FormHelperText>{errors.s3?.amazonS3Authentication?.authenticationMethod?.message}</FormHelperText>
                             )}
                         </FormControl>
                     )}
@@ -473,7 +507,7 @@ const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any
             {authMethod === 'IAM Role' && (
                 <Grid item xs={6}>
                     <Controller
-                        name="s3.arn"
+                        name="s3.amazonS3Authentication.ARN"
                         control={control}
                         rules={{
                             required: "ARN is required",
@@ -485,8 +519,8 @@ const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any
                                     {...field}
                                     fullWidth
                                     label="ARN"
-                                    error={!!errors.s3?.arn}
-                                    helperText={errors.s3?.arn?.message}
+                                    error={!!errors.s3?.amazonS3Authentication?.ARN}
+                                    helperText={errors.s3?.amazonS3Authentication?.ARN?.message}
                                 />
                                 <Tooltip title="Amazon Resource Name format: arn:aws:iam::123456789012:role/RoleName" arrow>
                                     <IconButton size="small" sx={{ mt: 1, ml: 1 }}>
@@ -503,7 +537,7 @@ const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any
                 <>
                     <Grid item xs={6}>
                         <Controller
-                            name="s3.accessKey"
+                            name="s3.amazonS3Authentication.accessKey"
                             control={control}
                             rules={{ required: "Access Key is required" }}
                             render={({ field }) => (
@@ -512,15 +546,15 @@ const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any
                                     fullWidth
                                     label="Access Key ID"
                                     required
-                                    error={!!errors.s3?.accessKey}
-                                    helperText={errors.s3?.accessKey?.message}
+                                    error={!!errors.s3?.amazonS3Authentication?.accessKey}
+                                    helperText={errors.s3?.amazonS3Authentication?.accessKey?.message}
                                 />
                             )}
                         />
                     </Grid>
                     <Grid item xs={6}>
                         <Controller
-                            name="s3.secretKey"
+                            name="s3.amazonS3Authentication.secretKey"
                             control={control}
                             rules={{ required: "Secret Key is required" }}
                             render={({ field }) => (
@@ -530,8 +564,8 @@ const AmazonS3Settings = forwardRef<any, { control: any, errors: any, watch: any
                                     label="Secret Access Key"
                                     type="password"
                                     required
-                                    error={!!errors.s3?.secretKey}
-                                    helperText={errors.s3?.secretKey?.message}
+                                    error={!!errors.s3?.amazonS3Authentication?.secretKey}
+                                    helperText={errors.s3?.amazonS3Authentication?.secretKey?.message}
                                 />
                             )}
                         />
@@ -554,9 +588,16 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
                 host: 'sftp.yourplatform.com',
                 port: 22,
                 username: 'ftpuser',
-                authenticationType: 'SSH Key',
-                sshKey: ''
+                type: 'SFTP',
+                ftpAuthentication: {
+                    type: 'SSH Key',
+                    sshKey: '',
+                    password: '',
+                    passphrase: ''
+                }
             },
+            // Commented out but preserved for future reference
+            /* 
             ftps: {
                 host: 'ftps.yourplatform.com',
                 port: 21,
@@ -564,12 +605,17 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
                 password: '',
                 encryption: 'Implicit'
             },
+            */
             s3: {
                 region: 'us-east-1',
                 bucketName: 'shareholder-data',
                 folderPath: 'incoming/data/',
-                authMethod: 'IAM Role',
-                arn: 'arn:aws:iam::123456789012:role/S3Access'
+                amazonS3Authentication: {
+                    authenticationMethod: 'IAM Role',
+                    ARN: 'arn:aws:iam::123456789012:role/S3Access',
+                    accessKey: '',
+                    secretKey: ''
+                }
             }
         },
         mode: 'onChange'
@@ -583,17 +629,9 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
     // Update connection type when tab changes
     const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
-        switch (newValue) {
-            case 0:
-                setValue('connectionType', 'SFTP');
-                break;
-            case 1:
-                setValue('connectionType', 'FTPS');
-                break;
-            case 2:
-                setValue('connectionType', 'S3');
-                break;
-        }
+        // Adjust index to skip FTPS (index 1)
+        const connectionTypes: ConnectionType[] = ['SFTP', 'S3'];
+        setValue('connectionType', connectionTypes[newValue]);
     };
 
     // Expose methods to parent component
@@ -604,22 +642,26 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
 
             switch (connectionType) {
                 case 'SFTP':
-                    fieldsToValidate = ['sftp.host', 'sftp.port', 'sftp.username', 'sftp.authenticationType'];
-                    if (watch('sftp.authenticationType') === 'SSH Key') {
-                        fieldsToValidate.push('sftp.sshKey');
+                    fieldsToValidate = ['sftp.host', 'sftp.port', 'sftp.type', 'sftp.username', 'sftp.ftpAuthentication.type'];
+                    const authType = watch('sftp.ftpAuthentication.type');
+                    if (authType === 'SSH Key') {
+                        fieldsToValidate.push('sftp.ftpAuthentication.sshKey');
                     } else {
-                        fieldsToValidate.push('sftp.password');
+                        fieldsToValidate.push('sftp.ftpAuthentication.password');
                     }
                     break;
+                /* 
                 case 'FTPS':
                     fieldsToValidate = ['ftps.host', 'ftps.port', 'ftps.username', 'ftps.password', 'ftps.encryption'];
                     break;
+                */
                 case 'S3':
-                    fieldsToValidate = ['s3.region', 's3.bucketName', 's3.authMethod'];
-                    if (watch('s3.authMethod') === 'IAM Role') {
-                        fieldsToValidate.push('s3.arn');
+                    fieldsToValidate = ['s3.region', 's3.bucketName', 's3.amazonS3Authentication.authenticationMethod'];
+                    const s3AuthMethod = watch('s3.amazonS3Authentication.authenticationMethod');
+                    if (s3AuthMethod === 'IAM Role') {
+                        fieldsToValidate.push('s3.amazonS3Authentication.ARN');
                     } else {
-                        fieldsToValidate.push('s3.accessKey', 's3.secretKey');
+                        fieldsToValidate.push('s3.amazonS3Authentication.accessKey', 's3.amazonS3Authentication.secretKey');
                     }
                     break;
             }
@@ -632,9 +674,9 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
     }));
 
     // Handle form submission
-    const onSubmit = (data: ConnectionData) => {
+    const onSubmit = (data: any) => {
         if (onDataChange) {
-            onDataChange(data);
+            onDataChange(data as ConnectionData);
         }
     };
 
@@ -643,7 +685,7 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
         const subscription = methods.watch((value, { name, type }) => {
             // Only notify parent when we have a complete form
             if (type === 'change') {
-                handleSubmit(onSubmit)();
+                handleSubmit(onSubmit as any)();
             }
         });
 
@@ -660,13 +702,13 @@ const Connection = forwardRef<ConnectionHandle, ConnectionProps>(({ onDataChange
             </Typography>
             <Tabs value={selectedTab} onChange={handleTabChange} sx={{ mb: 3 }}>
                 <Tab label="SFTP" />
-                <Tab label="FTPS" />
+                {/* <Tab label="FTPS" /> */}
                 <Tab label="Amazon S3" />
             </Tabs>
 
             {selectedTab === 0 && <SFTPSettings control={control} errors={errors} watch={watch} />}
-            {selectedTab === 1 && <FTPSSettings control={control} errors={errors} />}
-            {selectedTab === 2 && <AmazonS3Settings control={control} errors={errors} watch={watch} />}
+            {/* {selectedTab === 1 && <FTPSSettings control={control} errors={errors} />} */}
+            {selectedTab === 1 && <AmazonS3Settings control={control} errors={errors} watch={watch} />}
         </Box>
     );
 });

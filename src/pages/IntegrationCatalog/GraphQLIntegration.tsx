@@ -7,6 +7,7 @@ import { BasicInfoRef } from '../../components/GraphqlSteps/BasicInfo';
 import { SchemaDesignRef } from '../../components/GraphqlSteps/SchemaDesign';
 import { SecurityRef } from '../../components/GraphqlSteps/Security';
 import useMessage from '@/hooks/useMessage';
+import { useGraphqlIntegrationMutation } from '@/services/integration-catalog';
 
 const steps = ['Basic Info', 'Schema Design', 'Security', 'Review'];
 
@@ -16,6 +17,9 @@ interface FormData {
         integrationName: string;
         graphqlEndpoint: string;
         introspectionEnabled: boolean;
+        environment: string;
+        status: string;
+        updateFrequency: string;
     };
     schemaDesign: {
         schema: string;
@@ -46,6 +50,9 @@ const GraphQLIntegration = () => {
             integrationName: 'GraphQL Financial Data API',
             graphqlEndpoint: 'https://api.yourplatform.com/graphql',
             introspectionEnabled: true,
+            environment: 'development',
+            status: 'active',
+            updateFrequency: 'daily'
         },
         schemaDesign: {
             schema: '',
@@ -65,6 +72,8 @@ const GraphQLIntegration = () => {
     const basicInfoRef = useRef<BasicInfoRef>(null);
     const schemaDesignRef = useRef<SchemaDesignRef>(null);
     const securityRef = useRef<SecurityRef>(null);
+
+    const [graphqlIntegration, { isLoading }] = useGraphqlIntegrationMutation();
 
     // Function to navigate to a specific step
     const goToStep = (step: number) => {
@@ -98,8 +107,41 @@ const GraphQLIntegration = () => {
                 }
             }
         } else if (activeStep === 3) {
-            showSnackbar('Integration created successfully', '', 'success');
-            navigate('/integration-catalog');
+            const payload = {
+                name: formData.basicInfo.integrationName,
+                url: formData.basicInfo.graphqlEndpoint,
+                isIntrospectionEnabled: formData.basicInfo.introspectionEnabled,
+                query: formData.schemaDesign.schema,
+                variables: {},
+                headers: formData.security.authMethod === 'Bearer Token' ? {
+                    Authorization: `Bearer ${formData.security.bearerToken}`
+                } : {},
+                authenticationId: formData.security.authMethod,
+                dataFormat: 'json',
+                advanceOptions: 'caching',
+                updateFrequency: formData.basicInfo.updateFrequency,
+                environment: formData.basicInfo.environment,
+                status: formData.basicInfo.status,
+                schemaDesign: {
+                    type: formData.schemaDesign.schemaSource,
+                    schemaDesign: formData.schemaDesign.schema
+                },
+                securityAndComplexity: {
+                    authenticationMethod: formData.security.authMethod,
+                    maxQueryDepth: formData.security.maxQueryDepth,
+                    maxQueryCost: formData.security.maxQueryCost,
+                    rateLimit: formData.security.rateLimit,
+                    timeout: formData.security.timeout
+                }
+
+            }
+            const response = await graphqlIntegration(payload);
+            if (!response.error) {
+                showSnackbar('Integration created successfully', '', 'success');
+                navigate('/integration-catalog');
+            } else {
+                showSnackbar('Error creating integration', 'Please try again', 'error');
+            }
         }
         else {
             // For other steps, we'll add validation later

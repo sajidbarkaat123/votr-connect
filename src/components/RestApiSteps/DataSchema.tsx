@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, useImperativeHandle, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -18,19 +18,24 @@ import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { DataSchemaRef, SchemaFormData, schemaSchema } from './types';
 
-const DataSchema = forwardRef<DataSchemaRef, {}>((_, ref) => {
-    const [formData, setFormData] = useState<SchemaFormData | null>(null);
+type DataSchemaProps = {
+    initialValues?: SchemaFormData | null;
+};
 
-    const { control, handleSubmit, formState: { errors, isValid }, trigger } = useForm<SchemaFormData>({
+const fallbackDefaults: SchemaFormData = {
+    resourceName: 'Shareholders',
+    endpointPath: '/shareholders',
+    fields: [
+        { name: 'id', type: 'string', required: true, description: 'Unique identifier' },
+        { name: 'name', type: 'string', required: true, description: 'Shareholder\'s full name' }
+    ]
+};
+
+const DataSchema = forwardRef<DataSchemaRef, DataSchemaProps>(({ initialValues, ...props }, ref) => {
+    console.log(initialValues, "check");
+    const { control, handleSubmit, formState: { errors, isValid }, trigger, watch, reset } = useForm<SchemaFormData>({
         resolver: yupResolver(schemaSchema),
-        defaultValues: {
-            resourceName: 'Shareholders',
-            endpointPath: '/shareholders',
-            fields: [
-                { name: 'id', type: 'string', required: true, description: 'Unique identifier' },
-                { name: 'name', type: 'string', required: true, description: 'Shareholder\'s full name' }
-            ]
-        },
+        defaultValues: initialValues || fallbackDefaults,
         mode: 'onChange'
     });
 
@@ -39,32 +44,27 @@ const DataSchema = forwardRef<DataSchemaRef, {}>((_, ref) => {
         name: 'fields'
     });
 
-    // Validate the form whenever it changes
-    React.useEffect(() => {
-        // Trigger validation on mount and when form changes
+    useEffect(() => {
         trigger();
     }, [trigger]);
 
-    // Expose isValid method to parent components
+    useEffect(() => {
+        if (initialValues) {
+            reset(initialValues);
+        }
+    }, [initialValues, reset]);
+
     useImperativeHandle(ref, () => ({
         isValid: () => isValid,
-        getData: () => formData || {
-            resourceName: 'Shareholders',
-            endpointPath: '/shareholders',
-            fields: [
-                { name: 'id', type: 'string', required: true, description: 'Unique identifier' },
-                { name: 'name', type: 'string', required: true, description: 'Shareholder\'s full name' }
-            ]
-        }
+        getData: () => watch() as SchemaFormData
     }));
 
     const onSubmit = (data: SchemaFormData) => {
-        console.log('Schema data:', data);
-        setFormData(data);
+        // No need to set local state, react-hook-form manages it
     };
 
     const addField = () => {
-        append({ name: '', type: 'string', required: false, description: '' });
+        append({ name: '', type: 'string', required: false, description: 'aaaaa' });
     };
 
     // Helper function to safely get error message

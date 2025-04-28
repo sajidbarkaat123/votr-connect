@@ -26,6 +26,7 @@ import CreateRequestPage from "@/pages/ProductionApprovals/CreateRequest";
 import CreateClient from "@/pages/ClientManagement/CreateClient";
 import GraphQLIntegration from '../pages/IntegrationCatalog/GraphQLIntegration';
 import FileUploadIntegration from '../pages/IntegrationCatalog/FileUploadIntegration';
+import IntegrationCatalogList from "@/pages/IntegrationCatalog/IntegrationCatalogList";
 
 
 const Routes = () => {
@@ -73,16 +74,20 @@ const Routes = () => {
           element: <IntegrationCatalogPage />
         },
         {
-          path: "rest-api-integration",
+          path: "rest-api",
           element: <RestApiIntegration />
         },
         {
-          path: "graphql-integration",
+          path: "graphql",
           element: <GraphQLIntegration />
         },
         {
-          path: "file-upload-integration",
+          path: "file-upload",
           element: <FileUploadIntegration />
+        },
+        {
+          path: "list",
+          element: <IntegrationCatalogList />
         }
       ]
     },

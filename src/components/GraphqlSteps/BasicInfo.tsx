@@ -1,4 +1,4 @@
-import { Box, Typography, TextField, Grid, FormControlLabel, Switch, Tooltip, IconButton } from '@mui/material';
+import { Box, Typography, TextField, Grid, FormControlLabel, Switch, Tooltip, IconButton, MenuItem, Select, FormControl, InputLabel, FormHelperText } from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useForm, Controller } from 'react-hook-form';
 import { forwardRef, useImperativeHandle, useEffect, useRef } from 'react';
@@ -7,6 +7,9 @@ interface BasicInfoFormValues {
     integrationName: string;
     graphqlEndpoint: string;
     introspectionEnabled: boolean;
+    environment: string;
+    status: string;
+    updateFrequency: string;
 }
 
 export interface BasicInfoRef {
@@ -43,13 +46,19 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(({ formData, updateFo
         const hasChanges =
             formData.integrationName !== formValues.integrationName ||
             formData.graphqlEndpoint !== formValues.graphqlEndpoint ||
-            formData.introspectionEnabled !== formValues.introspectionEnabled;
+            formData.introspectionEnabled !== formValues.introspectionEnabled ||
+            formData.environment !== formValues.environment ||
+            formData.status !== formValues.status ||
+            formData.updateFrequency !== formValues.updateFrequency;
 
         if (hasChanges) {
             isInternalUpdate.current = true;
             setValue('integrationName', formData.integrationName);
             setValue('graphqlEndpoint', formData.graphqlEndpoint);
             setValue('introspectionEnabled', formData.introspectionEnabled);
+            setValue('environment', formData.environment || 'development');
+            setValue('status', formData.status || 'active');
+            setValue('updateFrequency', formData.updateFrequency || 'daily');
         }
     }, [formData, setValue, formValues]);
 
@@ -69,7 +78,7 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(({ formData, updateFo
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                 Configure GraphQL Integration
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" color="text.primary" sx={{ mb: 3 }}>
                 Set up your integration with flexible GraphQL queries
             </Typography>
             <Grid container spacing={3}>
@@ -125,6 +134,76 @@ const BasicInfo = forwardRef<BasicInfoRef, BasicInfoProps>(({ formData, updateFo
                                 helperText={errors.graphqlEndpoint?.message}
                                 sx={{ mb: 2 }}
                             />
+                        )}
+                    />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <Controller
+                        name="environment"
+                        control={control}
+                        rules={{ required: 'Environment is required' }}
+                        render={({ field }) => (
+                            <FormControl fullWidth error={!!errors.environment}>
+                                <InputLabel id="environment-label" sx={{ color: 'text.primary' }}>Environment</InputLabel>
+                                <Select
+                                    {...field}
+                                    labelId="environment-label"
+                                    label="Environment"
+                                    required
+                                >
+                                    <MenuItem value="development">Development</MenuItem>
+                                    <MenuItem value="staging">Staging</MenuItem>
+                                    <MenuItem value="production">Production</MenuItem>
+                                </Select>
+                                {errors.environment && <FormHelperText>{errors.environment.message}</FormHelperText>}
+                            </FormControl>
+                        )}
+                    />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <Controller
+                        name="status"
+                        control={control}
+                        rules={{ required: 'Status is required' }}
+                        render={({ field }) => (
+                            <FormControl fullWidth error={!!errors.status}>
+                                <InputLabel id="status-label" sx={{ color: 'text.primary' }}>Status</InputLabel>
+                                <Select
+                                    {...field}
+                                    labelId="status-label"
+                                    label="Status"
+                                    required
+                                >
+                                    <MenuItem value="active">Active</MenuItem>
+                                    <MenuItem value="inactive">Inactive</MenuItem>
+                                    <MenuItem value="draft">Draft</MenuItem>
+                                </Select>
+                                {errors.status && <FormHelperText>{errors.status.message}</FormHelperText>}
+                            </FormControl>
+                        )}
+                    />
+                </Grid>
+                <Grid item xs={12} md={4}>
+                    <Controller
+                        name="updateFrequency"
+                        control={control}
+                        rules={{ required: 'Update frequency is required' }}
+                        render={({ field }) => (
+                            <FormControl fullWidth error={!!errors.updateFrequency}>
+                                <InputLabel id="update-frequency-label" sx={{ color: 'text.primary' }}>Update Frequency</InputLabel>
+                                <Select
+                                    {...field}
+                                    labelId="update-frequency-label"
+                                    label="Update Frequency"
+                                    required
+                                >
+                                    <MenuItem value="realtime">Real-time</MenuItem>
+                                    <MenuItem value="hourly">Hourly</MenuItem>
+                                    <MenuItem value="daily">Daily</MenuItem>
+                                    <MenuItem value="weekly">Weekly</MenuItem>
+                                </Select>
+                                {errors.updateFrequency && <FormHelperText>{errors.updateFrequency.message}</FormHelperText>}
+                            </FormControl>
                         )}
                     />
                 </Grid>

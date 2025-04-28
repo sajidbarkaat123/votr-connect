@@ -54,14 +54,19 @@ const Schedule = forwardRef<ScheduleHandle, ScheduleProps>(({ onDataChange }, re
         }
     }));
 
-    // Handle form data changes
-    const onFormChange = () => {
-        if (onDataChange) {
-            handleSubmit((data) => {
+    // Watch for form changes and update parent component
+    useEffect(() => {
+        // Set up a subscription to watch form changes
+        const subscription = watch(() => {
+            if (onDataChange) {
+                const data = getValues();
                 onDataChange(data);
-            })();
-        }
-    };
+            }
+        });
+
+        // Clean up the subscription
+        return () => subscription.unsubscribe();
+    }, [watch, getValues, onDataChange]);
 
     // Validate and convert time
     const validateTime = (value: string) => {
@@ -79,7 +84,7 @@ const Schedule = forwardRef<ScheduleHandle, ScheduleProps>(({ onDataChange }, re
     const daysOfMonth = Array.from({ length: 31 }, (_, i) => i + 1);
 
     return (
-        <Box onChange={onFormChange}>
+        <Box>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                 Configure Schedule
             </Typography>

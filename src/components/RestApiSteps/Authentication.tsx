@@ -1,59 +1,52 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
-import { Box, Typography, TextField, Grid, MenuItem, Button, Alert, CircularProgress } from "@mui/material";
+import React, { forwardRef, useImperativeHandle, useEffect } from 'react';
+import { Box, Typography, TextField, Grid, MenuItem } from "@mui/material";
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { AuthenticationRef, AuthFormData, authSchema } from './types';
 
-const Authentication = forwardRef<AuthenticationRef, {}>((props, ref) => {
-    const [testingAuth, setTestingAuth] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean, message: string } | null>(null);
-    const [credentialsValidated, setCredentialsValidated] = useState(false);
+type AuthenticationProps = {
+    initialValues?: AuthFormData | null;
+};
 
-    const { control, handleSubmit, watch, formState: { errors } } = useForm<AuthFormData>({
+const fallbackDefaults: AuthFormData = {
+    authMethod: 'oauth2',
+    grantType: 'client_credentials',
+    scopes: 'read:shareholders',
+    tokenUrl: 'https://api.yourplatform.com/oauth/token',
+    clientId: '',
+    clientSecret: '',
+    redirectUri: 'https://portal.yourcompany.com/callback',
+    // Add other fields as needed for your form
+};
+
+const Authentication = forwardRef<AuthenticationRef, AuthenticationProps>(({ initialValues, ...props }, ref) => {
+    const { control, handleSubmit, watch, formState: { errors, isValid }, reset } = useForm<AuthFormData>({
         resolver: yupResolver(authSchema),
-        defaultValues: {
-            authMethod: 'oauth2',
-            grantType: 'client_credentials',
-            scopes: 'read:shareholders'
-        }
+        defaultValues: initialValues || fallbackDefaults,
+        mode: 'onChange'
     });
 
-    // Expose isValid method to parent components
+
     useImperativeHandle(ref, () => ({
-        isValid: () => credentialsValidated
+        isValid: () => isValid,
+        getData: () => watch() as AuthFormData
     }));
 
     const authMethod = watch('authMethod');
     const grantType = watch('grantType');
 
-    const testAuthentication = async (data: AuthFormData) => {
-        try {
-            setTestingAuth(true);
-            setTestResult(null);
-            setCredentialsValidated(false);
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Simulated success
-            setTestResult({
-                success: true,
-                message: 'Authentication successful! Credentials validated.'
-            });
-            setCredentialsValidated(true);
-        } catch (error) {
-            setTestResult({
-                success: false,
-                message: 'Authentication failed. Please check your credentials.'
-            });
-            setCredentialsValidated(false);
-        } finally {
-            setTestingAuth(false);
+    useEffect(() => {
+        if (initialValues) {
+            reset(initialValues);
         }
+    }, [initialValues, reset]);
+
+    const onSubmit = (data: AuthFormData) => {
+        // No need to set local state, react-hook-form manages it
     };
 
     return (
-        <Box component="form" onSubmit={handleSubmit(testAuthentication)}>
+        <Box component="form" onSubmit={handleSubmit(onSubmit)}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                 Configure REST API Integration
             </Typography>
@@ -134,7 +127,6 @@ const Authentication = forwardRef<AuthenticationRef, {}>((props, ref) => {
                                             required
                                             error={!!errors.tokenUrl}
                                             helperText={errors.tokenUrl?.message}
-                                            defaultValue="https://api.yourplatform.com/oauth/token"
                                         />
                                     )}
                                 />
@@ -192,24 +184,25 @@ const Authentication = forwardRef<AuthenticationRef, {}>((props, ref) => {
                                             )}
                                         />
                                     </Grid>
-                                    <Grid item xs={12}>
-                                        <Controller
-                                            name="redirectUri"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <TextField
-                                                    {...field}
-                                                    fullWidth
-                                                    label="Redirect URI"
-                                                    required
-                                                    error={!!errors.redirectUri}
-                                                    helperText={errors.redirectUri?.message}
-                                                />
-                                            )}
-                                        />
-                                    </Grid>
                                 </>
                             )}
+
+                            <Grid item xs={12}>
+                                <Controller
+                                    name="redirectUri"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            fullWidth
+                                            label="Redirect URI"
+                                            required={grantType === 'authorization_code'}
+                                            error={!!errors.redirectUri}
+                                            helperText={errors.redirectUri?.message}
+                                        />
+                                    )}
+                                />
+                            </Grid>
                         </Grid>
                     </Grid>
                 )}
@@ -257,32 +250,6 @@ const Authentication = forwardRef<AuthenticationRef, {}>((props, ref) => {
                         </Grid>
                     </Grid>
                 )}
-
-                <Grid item xs={12}>
-                    <Button
-                        variant="outlined"
-                        color="primary"
-                        type="submit"
-                        disabled={testingAuth}
-                        sx={{ mt: 2 }}
-                    >
-                        {testingAuth ? (
-                            <>
-                                <CircularProgress size={16} sx={{ mr: 1 }} />
-                                Testing Authentication...
-                            </>
-                        ) : 'Test Authentication'}
-                    </Button>
-
-                    {testResult && (
-                        <Alert
-                            severity={testResult.success ? "success" : "error"}
-                            sx={{ mt: 2 }}
-                        >
-                            {testResult.message}
-                        </Alert>
-                    )}
-                </Grid>
             </Grid>
         </Box>
     );

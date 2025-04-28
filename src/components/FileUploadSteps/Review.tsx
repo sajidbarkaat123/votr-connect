@@ -77,8 +77,6 @@ const Review = forwardRef<any, ReviewProps>(({ fileSettings, connection, schedul
 
         if (connection.connectionType === 'SFTP' && connection.sftp) {
             fullPath = `sftp://${connection.sftp.username}@${connection.sftp.host}:${connection.sftp.port}/incoming/${sampleFilename}${extension}`;
-        } else if (connection.connectionType === 'FTPS' && connection.ftps) {
-            fullPath = `ftps://${connection.ftps.username}@${connection.ftps.host}:${connection.ftps.port}/incoming/${sampleFilename}${extension}`;
         } else if (connection.connectionType === 'S3' && connection.s3) {
             const folderPath = connection.s3.folderPath || '';
             fullPath = `s3://${connection.s3.bucketName}/${folderPath}${sampleFilename}${extension}`;
@@ -214,27 +212,15 @@ const Review = forwardRef<any, ReviewProps>(({ fileSettings, connection, schedul
                                     Authentication
                                 </Typography>
                                 <Typography variant="body1" sx={{ mb: 2 }}>
-                                    {connection.sftp.authenticationType}
-                                </Typography>
-                            </Grid>
-                        </>
-                    )}
-                    {connection?.connectionType === 'FTPS' && connection.ftps && (
-                        <>
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                    Host
-                                </Typography>
-                                <Typography variant="body1" sx={{ mb: 2 }}>
-                                    {connection.ftps.host}:{connection.ftps.port}
+                                    {connection.sftp.ftpAuthentication.type}
                                 </Typography>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                                    Encryption
+                                    Connection Type
                                 </Typography>
                                 <Typography variant="body1" sx={{ mb: 2 }}>
-                                    {connection.ftps.encryption}
+                                    {connection.sftp.type}
                                 </Typography>
                             </Grid>
                         </>
@@ -254,9 +240,37 @@ const Review = forwardRef<any, ReviewProps>(({ fileSettings, connection, schedul
                                     Authentication
                                 </Typography>
                                 <Typography variant="body1" sx={{ mb: 2 }}>
-                                    {connection.s3.authMethod}
+                                    {connection.s3.amazonS3Authentication.authenticationMethod}
                                 </Typography>
                             </Grid>
+                            <Grid item xs={12} md={6}>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                    Folder Path
+                                </Typography>
+                                <Typography variant="body1" sx={{ mb: 2 }}>
+                                    {connection.s3.folderPath || '/'}
+                                </Typography>
+                            </Grid>
+                            {connection.s3.amazonS3Authentication.authenticationMethod === 'IAM Role' && (
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                        ARN
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ mb: 2 }}>
+                                        {connection.s3.amazonS3Authentication.ARN}
+                                    </Typography>
+                                </Grid>
+                            )}
+                            {connection.s3.amazonS3Authentication.authenticationMethod === 'Access Key' && (
+                                <Grid item xs={12} md={6}>
+                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                        Access Key
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ mb: 2 }}>
+                                        {connection.s3.amazonS3Authentication.accessKey?.substring(0, 5)}...
+                                    </Typography>
+                                </Grid>
+                            )}
                         </>
                     )}
                 </Grid>

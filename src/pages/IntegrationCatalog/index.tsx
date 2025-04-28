@@ -1,10 +1,15 @@
+import { CustomButton, FullPageLoader } from "@/components";
 import IntegrationCard from "@/components/IntegrationCard";
-import { Box, Grid, Typography } from "@mui/material";
+import { useGetIntegrationCatalogQuery } from "@/services/integration-catalog";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
+import { Box, Grid, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router";
 
 
 const IntegrationCatalog = () => {
     const navigate = useNavigate();
+    const { data: integrationCatalog, isLoading } = useGetIntegrationCatalogQuery();
+    console.log(integrationCatalog, "integrationCatalog");
     const handleConfigure = (route: string) => {
         navigate(route);
     };
@@ -13,31 +18,56 @@ const IntegrationCatalog = () => {
         console.log('Request clicked');
     };
 
+    if (isLoading) return <FullPageLoader />
+
     return (
         <Box className="p-6">
-            <Typography
-                variant="h4"
-                sx={{
-                    fontSize: '1.75rem',
-                    fontWeight: 600,
-                    color: '#111827',
-                    mb: 1
-                }}
-            >
-                Integration Catalog
-            </Typography>
-            <Typography
-                sx={{
-                    fontSize: '1rem',
-                    color: '#6B7280',
-                    mb: 4
-                }}
-            >
-                Select an integration type to get started with configuration.
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Box>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontSize: '1.75rem',
+                            fontWeight: 600,
+                            color: '#111827',
+                            mb: 1
+                        }}
+                    >
+                        Integration Catalog
+                    </Typography>
+                    <Typography
+                        sx={{
+                            fontSize: '1rem',
+                            color: '#6B7280',
+                            mb: 4
+                        }}
+                    >
+                        Select an integration type to get started with configuration.
+                    </Typography>
+                </Box>
+                <CustomButton
+                    title="integration list"
+                    href="/integration-catalog/list"
+                    endIcon={<ArrowForward />}
+
+                />
+            </Stack>
+
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                {integrationCatalog?.map((integration) => (
+                    <Grid item xs={12} md={6}>
+                        <IntegrationCard
+                            key={integration.path}
+                            title={integration.name}
+                            description={integration.description}
+                            buttonText="Configure"
+                            buttonColor="#5263FF"
+                            onClick={() => handleConfigure(`/integration-catalog/${integration.path}`)}
+                        />
+                    </Grid>
+                ))}
+                {/* <Grid item xs={12} md={6}>
                     <IntegrationCard
                         title="REST API"
                         description="Share data via endpoints with JSON responses"
@@ -72,7 +102,7 @@ const IntegrationCatalog = () => {
                         buttonColor="#6B7280"
                         onClick={handleRequest}
                     />
-                </Grid>
+                </Grid> */}
             </Grid>
         </Box>
     );
