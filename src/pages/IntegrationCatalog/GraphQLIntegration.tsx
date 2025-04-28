@@ -1,272 +1,210 @@
-import { Box, Container, Typography, TextField, Grid, Button, Stepper, Step, StepLabel, Switch, FormControlLabel, Tabs, Tab, TextareaAutosize, MenuItem, Select, InputLabel, FormControl } from '@mui/material';
+import { Box, Container, Typography, Button, Stepper, Step, StepLabel } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { ArrowBack } from '@mui/icons-material';
-import { useState } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useState, useRef, useEffect } from 'react';
+import { BasicInfo, SchemaDesign, Security, Review } from '../../components/GraphqlSteps';
+import { BasicInfoRef } from '../../components/GraphqlSteps/BasicInfo';
+import { SchemaDesignRef } from '../../components/GraphqlSteps/SchemaDesign';
+import { SecurityRef } from '../../components/GraphqlSteps/Security';
+import useMessage from '@/hooks/useMessage';
+import { useGraphqlIntegrationMutation } from '@/services/integration-catalog';
 
 const steps = ['Basic Info', 'Schema Design', 'Security', 'Review'];
 
-const BasicInfo = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Configure GraphQL Integration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Set up your integration with flexible GraphQL queries
-        </Typography>
-        <Grid container spacing={3}>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="Integration Name"
-                    required
-                    defaultValue="GraphQL Financial Data API"
-                    sx={{ mb: 2 }}
-                />
-            </Grid>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="GraphQL Endpoint"
-                    required
-                    defaultValue="https://api.yourplatform.com/graphql"
-                    sx={{ mb: 2 }}
-                />
-            </Grid>
-            <Grid item xs={12}>
-                <FormControlLabel
-                    control={<Switch defaultChecked />}
-                    label="Introspection Enabled"
-                />
-            </Grid>
-        </Grid>
-    </Box>
-);
-
-const ManualEntry = () => (
-    <TextareaAutosize
-        minRows={10}
-        placeholder="type Shareholder { id: ID! name: String! accountNumber: String! positions: [Position]! }\ntype Query { shareholders: [Shareholder]! }"
-        style={{ width: '100%', padding: '10px', borderRadius: '4px', borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}
-    />
-);
-
-const ImportSchema = () => {
-    const { getRootProps, getInputProps } = useDropzone({
-        accept: {
-            'application/graphql': ['.graphql', '.gql'],
-            'application/json': ['.json'],
-            'text/plain': ['.txt']
-        },
-        onDrop: (acceptedFiles) => {
-            console.log('Files:', acceptedFiles);
-        },
-    });
-
-    return (
-        <Box {...getRootProps()} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed #E5E7EB', borderRadius: 1, p: 4, textAlign: 'center', bgcolor: '#F9FAFB' }}>
-            <input {...getInputProps()} />
-            <Typography variant="body2" color="text.primary" sx={{ mb: 2 }}>
-                Drag and drop your GraphQL schema file here
-            </Typography>
-            <Button variant="contained" color="primary">Browse Files</Button>
-            <Typography variant="caption" color="text.primary" sx={{ mt: 2 }}>
-                Supported formats: .graphql, .gql, JSON (Apollo), SDL Text
-            </Typography>
-        </Box>
-    );
-};
-
-const UseIntrospection = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Introspection Endpoint
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Enter the GraphQL endpoint URL to fetch schema via introspection
-        </Typography>
-        <Grid container spacing={3}>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="GraphQL Endpoint"
-                    defaultValue="https://api.example.com/graphql"
-                    sx={{ mb: 2 }}
-                />
-            </Grid>
-            <Grid item xs={12}>
-                <Button variant="contained" color="primary">Fetch Schema</Button>
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Authentication for Introspection
-                </Typography>
-                <TextareaAutosize
-                    minRows={3}
-                    placeholder='{"Authorization": "Bearer your-token-here"}'
-                    style={{ width: '100%', padding: '10px', borderRadius: '4px', borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' }}
-                />
-            </Grid>
-        </Grid>
-        <Typography variant="caption" color="error" sx={{ mt: 2 }}>
-            Note: The endpoint must have introspection enabled to fetch the schema
-        </Typography>
-    </Box>
-);
-
-const SchemaDesign = () => {
-    const [selectedTab, setSelectedTab] = useState(0);
-
-    const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-        setSelectedTab(newValue);
+// Add interface for form data
+interface FormData {
+    basicInfo: {
+        integrationName: string;
+        graphqlEndpoint: string;
+        introspectionEnabled: boolean;
+        environment: string;
+        status: string;
+        updateFrequency: string;
     };
-
-    return (
-        <Box>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                Define Your GraphQL Schema
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Choose how to define your GraphQL schema:
-            </Typography>
-            <Tabs value={selectedTab} onChange={handleTabChange} sx={{ mb: 3 }}>
-                <Tab label="Manual Entry" />
-                <Tab label="Import Schema" />
-                <Tab label="Use Introspection" />
-            </Tabs>
-            {selectedTab === 0 && <ManualEntry />}
-            {selectedTab === 1 && <ImportSchema />}
-            {selectedTab === 2 && <UseIntrospection />}
-        </Box>
-    );
-};
-
-const Security = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Configure Security Settings
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Set up security for your GraphQL endpoint
-        </Typography>
-        <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Authentication
-            </Typography>
-            <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Authentication Method</InputLabel>
-                <Select defaultValue="Bearer Token">
-                    <MenuItem value="Bearer Token">Bearer Token</MenuItem>
-                    <MenuItem value="API Key">API Key</MenuItem>
-                    <MenuItem value="OAuth 2.0">OAuth 2.0</MenuItem>
-                </Select>
-            </FormControl>
-        </Box>
-        <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Query Complexity Management
-            </Typography>
-            <Grid container spacing={3}>
-                <Grid item xs={6}>
-                    <TextField
-                        fullWidth
-                        label="Max Query Depth"
-                        defaultValue="5"
-                        type="number"
-                    />
-                </Grid>
-                <Grid item xs={6}>
-                    <TextField
-                        fullWidth
-                        label="Max Query Cost"
-                        defaultValue="1000"
-                        type="number"
-                    />
-                </Grid>
-                <Grid item xs={6}>
-                    <TextField
-                        fullWidth
-                        label="Rate Limit (requests/minute)"
-                        defaultValue="100"
-                        type="number"
-                    />
-                </Grid>
-                <Grid item xs={6}>
-                    <TextField
-                        fullWidth
-                        label="Timeout (seconds)"
-                        defaultValue="30"
-                        type="number"
-                    />
-                </Grid>
-            </Grid>
-        </Box>
-    </Box>
-);
-
-const Review = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Review and Finalize Your Integration Configuration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Review and finalize your integration configuration
-        </Typography>
-        <Box sx={{ mb: 3, p: 2, border: '1px solid #E5E7EB', borderRadius: 1, bgcolor: '#F9FAFB' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Basic Information
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Name: GraphQL Financial Data API
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Endpoint: https://api.yourplatform.com/graphql
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
-        </Box>
-        <Box sx={{ mb: 3, p: 2, border: '1px solid #E5E7EB', borderRadius: 1, bgcolor: '#F9FAFB' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Schema
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Types: Shareholder, Position
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Queries: shareholders
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
-        </Box>
-        <Box sx={{ mb: 3, p: 2, border: '1px solid #E5E7EB', borderRadius: 1, bgcolor: '#F9FAFB' }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Security
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Authentication: Bearer Token
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Query Limits: Depth 5, Cost 1000, Rate 100/min
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
-        </Box>
-    </Box>
-);
+    schemaDesign: {
+        schema: string;
+        schemaSource: string;
+    };
+    security: {
+        authMethod: string;
+        bearerToken?: string;
+        apiKey?: string;
+        oauthClientId?: string;
+        oauthClientSecret?: string;
+        maxQueryDepth: number;
+        maxQueryCost: number;
+        rateLimit: number;
+        timeout: number;
+    };
+}
 
 const GraphQLIntegration = () => {
     const navigate = useNavigate();
     const [activeStep, setActiveStep] = useState(0);
+    const [isStepValid, setIsStepValid] = useState(false);
+    const { showSnackbar } = useMessage();
+
+    // State to store all form data
+    const [formData, setFormData] = useState<FormData>({
+        basicInfo: {
+            integrationName: 'GraphQL Financial Data API',
+            graphqlEndpoint: 'https://api.yourplatform.com/graphql',
+            introspectionEnabled: true,
+            environment: 'development',
+            status: 'active',
+            updateFrequency: 'daily'
+        },
+        schemaDesign: {
+            schema: '',
+            schemaSource: 'manual',
+        },
+        security: {
+            authMethod: 'Bearer Token',
+            bearerToken: '',
+            maxQueryDepth: 5,
+            maxQueryCost: 1000,
+            rateLimit: 100,
+            timeout: 30,
+        }
+    });
+
+    // Refs for each step component
+    const basicInfoRef = useRef<BasicInfoRef>(null);
+    const schemaDesignRef = useRef<SchemaDesignRef>(null);
+    const securityRef = useRef<SecurityRef>(null);
+
+    const [graphqlIntegration, { isLoading }] = useGraphqlIntegrationMutation();
+
+    // Function to navigate to a specific step
+    const goToStep = (step: number) => {
+        setActiveStep(step);
+    };
+
+    // Validate the current step when trying to move forward
+    const handleNext = async () => {
+        if (activeStep === 0) {
+            // Validate BasicInfo step
+            if (basicInfoRef.current) {
+                const isValid = await basicInfoRef.current.validate();
+                if (isValid) {
+                    setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+                }
+            }
+        } else if (activeStep === 1) {
+            // Validate SchemaDesign step
+            if (schemaDesignRef.current) {
+                const isValid = await schemaDesignRef.current.validate();
+                if (isValid) {
+                    setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+                }
+            }
+        } else if (activeStep === 2) {
+            // Validate Security step
+            if (securityRef.current) {
+                const isValid = await securityRef.current.validate();
+                if (isValid) {
+                    setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+                }
+            }
+        } else if (activeStep === 3) {
+            const payload = {
+                name: formData.basicInfo.integrationName,
+                url: formData.basicInfo.graphqlEndpoint,
+                isIntrospectionEnabled: formData.basicInfo.introspectionEnabled,
+                query: formData.schemaDesign.schema,
+                variables: {},
+                headers: formData.security.authMethod === 'Bearer Token' ? {
+                    Authorization: `Bearer ${formData.security.bearerToken}`
+                } : {},
+                authenticationId: formData.security.authMethod,
+                dataFormat: 'json',
+                advanceOptions: 'caching',
+                updateFrequency: formData.basicInfo.updateFrequency,
+                environment: formData.basicInfo.environment,
+                status: formData.basicInfo.status,
+                schemaDesign: {
+                    type: formData.schemaDesign.schemaSource,
+                    schemaDesign: formData.schemaDesign.schema
+                },
+                securityAndComplexity: {
+                    authenticationMethod: formData.security.authMethod,
+                    maxQueryDepth: formData.security.maxQueryDepth,
+                    maxQueryCost: formData.security.maxQueryCost,
+                    rateLimit: formData.security.rateLimit,
+                    timeout: formData.security.timeout
+                }
+
+            }
+            const response = await graphqlIntegration(payload);
+            if (!response.error) {
+                showSnackbar('Integration created successfully', '', 'success');
+                navigate('/integration-catalog');
+            } else {
+                showSnackbar('Error creating integration', 'Please try again', 'error');
+            }
+        }
+        else {
+            // For other steps, we'll add validation later
+            setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+        }
+    };
+
+    // Check if current step is valid
+    useEffect(() => {
+        const checkStepValidity = () => {
+            if (activeStep === 0 && basicInfoRef.current) {
+                setIsStepValid(basicInfoRef.current.isValid());
+            } else if (activeStep === 1 && schemaDesignRef.current) {
+                setIsStepValid(schemaDesignRef.current.isValid());
+            } else if (activeStep === 2 && securityRef.current) {
+                setIsStepValid(securityRef.current.isValid());
+            } else if (activeStep === 3) {
+                setIsStepValid(true);
+            } else {
+                // For other steps, we'll add validation later
+                setIsStepValid(true);
+            }
+        };
+
+        // Check validity immediately
+        checkStepValidity();
+
+    }, [activeStep, formData]); // Add formData to dependencies so validation is checked when form data changes
+
+    // Update form data handlers for each step
+    const updateBasicInfo = (data: FormData['basicInfo']) => {
+        setFormData(prev => ({
+            ...prev,
+            basicInfo: data
+        }));
+    };
+
+    const updateSchemaDesign = (data: FormData['schemaDesign']) => {
+        setFormData(prev => ({
+            ...prev,
+            schemaDesign: data
+        }));
+    };
+
+    const updateSecurity = (data: FormData['security']) => {
+        setFormData(prev => ({
+            ...prev,
+            security: data
+        }));
+    };
 
     const renderStepContent = (step: number) => {
         switch (step) {
             case 0:
-                return <BasicInfo />;
+                return <BasicInfo ref={basicInfoRef} formData={formData.basicInfo} updateFormData={updateBasicInfo} />;
             case 1:
-                return <SchemaDesign />;
+                return <SchemaDesign ref={schemaDesignRef} formData={formData.schemaDesign} updateFormData={updateSchemaDesign} />;
             case 2:
-                return <Security />;
+                return <Security ref={securityRef} formData={formData.security} updateFormData={updateSecurity} />;
             case 3:
-                return <Review />;
+                return <Review formData={formData} goToStep={goToStep} />;
             default:
-                return <BasicInfo />;
+                return <BasicInfo ref={basicInfoRef} formData={formData.basicInfo} updateFormData={updateBasicInfo} />;
         }
     };
 
@@ -296,8 +234,22 @@ const GraphQLIntegration = () => {
                 <Box sx={{ p: 4, borderRadius: 2, border: '1px solid #E5E7EB', bgcolor: '#FFFFFF', boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)' }}>
                     {renderStepContent(activeStep)}
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-                        <Button variant="outlined" sx={{ mr: 2 }} onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}>Previous</Button>
-                        <Button variant="contained" color="primary" onClick={() => setActiveStep((prev) => Math.min(prev + 1, steps.length - 1))}>Next</Button>
+                        <Button
+                            variant="outlined"
+                            sx={{ mr: 2 }}
+                            onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
+                            disabled={activeStep === 0}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleNext}
+                            disabled={!isStepValid}
+                        >
+                            {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+                        </Button>
                     </Box>
                 </Box>
             </Box>

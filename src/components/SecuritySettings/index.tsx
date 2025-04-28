@@ -1,17 +1,38 @@
 import { useState } from 'react';
 import { Box, Button, TextField, Typography } from "@mui/material";
 import ToggleSwitch from '../ToggleSwitch';
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+
+// Password validation schema
+const passwordSchema = yup.object({
+    currentPassword: yup.string().required('Current password is required'),
+    newPassword: yup.string()
+        .required('New password is required')
+        .min(8, 'Password must be at least 8 characters long')
+        .matches(
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]/,
+            'Password must contain at least one uppercase letter, one lowercase letter, and one number'
+        ),
+    confirmPassword: yup.string()
+        .required('Please confirm your password')
+        .oneOf([yup.ref('newPassword')], 'Passwords must match')
+});
+
+type PasswordFormData = yup.InferType<typeof passwordSchema>;
 
 const SecuritySettings = () => {
     const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
 
-    const handlePasswordUpdate = (e: React.FormEvent) => {
-        e.preventDefault();
+    const { register, handleSubmit, formState: { errors } } = useForm<PasswordFormData>({
+        resolver: yupResolver(passwordSchema),
+        mode: 'onBlur'
+    });
+
+    const onSubmit = (data: PasswordFormData) => {
         // Add password update logic here
-        console.log('Updating password...');
+        console.log('Updating password...', data);
     };
 
     const handleConfigureTwoFactor = () => {
@@ -61,7 +82,7 @@ const SecuritySettings = () => {
                 </Typography>
                 <Box
                     component="form"
-                    onSubmit={handlePasswordUpdate}
+                    onSubmit={handleSubmit(onSubmit)}
                     sx={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -81,8 +102,9 @@ const SecuritySettings = () => {
                         </Typography>
                         <TextField
                             type="password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            {...register('currentPassword')}
+                            error={!!errors.currentPassword}
+                            helperText={errors.currentPassword?.message}
                             fullWidth
                             required
                             variant="outlined"
@@ -112,8 +134,9 @@ const SecuritySettings = () => {
                         </Typography>
                         <TextField
                             type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
+                            {...register('newPassword')}
+                            error={!!errors.newPassword}
+                            helperText={errors.newPassword?.message}
                             fullWidth
                             required
                             variant="outlined"
@@ -143,8 +166,9 @@ const SecuritySettings = () => {
                         </Typography>
                         <TextField
                             type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            {...register('confirmPassword')}
+                            error={!!errors.confirmPassword}
+                            helperText={errors.confirmPassword?.message}
                             fullWidth
                             required
                             variant="outlined"

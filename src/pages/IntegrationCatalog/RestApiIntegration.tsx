@@ -1,224 +1,200 @@
-import { Box, Container, Typography, TextField, Grid, MenuItem, Button, Stepper, Step, StepLabel } from '@mui/material';
-import { useNavigate } from 'react-router';
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Box, Container, Typography, Button, Stepper, Step, StepLabel } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
-import { useState } from 'react';
+import {
+    BasicInfo,
+    Authentication,
+    DataSchema,
+    Review,
+    BasicInfoRef,
+    AuthenticationRef,
+    DataSchemaRef,
+    BasicInfoFormData,
+    SchemaFormData,
+    AuthFormData
+} from '../../components/RestApiSteps';
+import useMessage from '@/hooks/useMessage';
+import { useRestApiIntegrationMutation, useGetRestAPIIntegrationByIdQuery, useUpdateRestAPIIntegrationMutation } from '@/services/integration-catalog';
 
 const steps = ['Basic Info', 'Authentication', 'Data Schema', 'Review'];
 
-const BasicInfo = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Configure REST API Integration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Set up your integration to receive data via REST API endpoints
-        </Typography>
-        <Grid container spacing={3}>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="Integration Name"
-                    required
-                    defaultValue="Shareholder Data Sync"
-                    sx={{ mb: 2 }}
-                />
-            </Grid>
-            <Grid item xs={12} md={6}>
-                <TextField
-                    fullWidth
-                    select
-                    label="Data Format"
-                    defaultValue="json"
-                >
-                    <MenuItem value="json">JSON</MenuItem>
-                    <MenuItem value="xml">XML</MenuItem>
-                </TextField>
-            </Grid>
-            <Grid item xs={12} md={6}>
-                <TextField
-                    fullWidth
-                    select
-                    label="Update Frequency"
-                    defaultValue="daily"
-                >
-                    <MenuItem value="daily">Daily</MenuItem>
-                    <MenuItem value="weekly">Weekly</MenuItem>
-                </TextField>
-            </Grid>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="Endpoint Base URL"
-                    required
-                    defaultValue="https://api.yourplatform.com/v1"
-                />
-            </Grid>
-        </Grid>
-    </Box>
-);
-
-const Authentication = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Configure REST API Integration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Set up authentication for your REST API integration
-        </Typography>
-        <Grid container spacing={3}>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    select
-                    label="Authentication Method"
-                    defaultValue="oauth2"
-                >
-                    <MenuItem value="oauth2">OAuth 2.0</MenuItem>
-                    <MenuItem value="apikey">API Key</MenuItem>
-                </TextField>
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    OAuth 2.0 Settings
-                </Typography>
-                <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                        <TextField
-                            fullWidth
-                            select
-                            label="Grant Type"
-                            defaultValue="client_credentials"
-                        >
-                            <MenuItem value="client_credentials">Client Credentials</MenuItem>
-                            <MenuItem value="authorization_code">Authorization Code</MenuItem>
-                        </TextField>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <TextField
-                            fullWidth
-                            label="Scopes"
-                            defaultValue="read:shareholders"
-                        />
-                    </Grid>
-                    <Grid item xs={12}>
-                        <TextField
-                            fullWidth
-                            label="Token URL"
-                            required
-                            defaultValue="https://api.yourplatform.com/oauth/token"
-                        />
-                    </Grid>
-                </Grid>
-            </Grid>
-        </Grid>
-    </Box>
-);
-
-const DataSchema = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Configure REST API Integration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Define the data schema for your integration
-        </Typography>
-        <Grid container spacing={3}>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="Resource Name"
-                    required
-                    defaultValue="Shareholders"
-                    sx={{ mb: 2 }}
-                />
-            </Grid>
-            <Grid item xs={12}>
-                <TextField
-                    fullWidth
-                    label="Endpoint Path"
-                    required
-                    defaultValue="/shareholders"
-                    sx={{ mb: 2 }}
-                />
-            </Grid>
-            <Grid item xs={12}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                    Field Definitions
-                </Typography>
-                <Box sx={{ p: 2, border: '1px solid #E5E7EB', borderRadius: 1, bgcolor: '#F9FAFB' }}>
-                    <Typography variant="body2" sx={{ mb: 1 }}>
-                        <strong>id</strong> (string, required): Unique identifier
-                    </Typography>
-                    <Typography variant="body2">
-                        <strong>name</strong> (string, required): Shareholder's full name
-                    </Typography>
-                </Box>
-                <Button variant="outlined" sx={{ mt: 2 }}>Edit Fields</Button>
-            </Grid>
-        </Grid>
-    </Box>
-);
-
-const Review = () => (
-    <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-            Review Your Configuration
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Please review the information below and make any necessary changes.
-        </Typography>
-        <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Basic Information
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Name: Shareholder Data Sync
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Base URL: https://api.yourplatform.com/v1
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
-        </Box>
-        <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Authentication
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Method: OAuth 2.0 (Client Credentials)
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Token URL: https://api.yourplatform.com/oauth/token
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
-        </Box>
-        <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                Data Schema
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>
-                Resource: Shareholders (/shareholders)
-            </Typography>
-            <Button variant="outlined" sx={{ mt: 1 }}>Edit</Button>
-        </Box>
-    </Box>
-);
-
 const RestApiIntegration = () => {
     const navigate = useNavigate();
+    const [params] = useSearchParams();
+    const id = params.get("id");
+    const isEditMode = Boolean(id);
+    const { showSnackbar } = useMessage();
+    const basicInfoRef = useRef<BasicInfoRef>(null);
+    const authRef = useRef<AuthenticationRef>(null);
+    const schemaRef = useRef<DataSchemaRef>(null);
+    const [formData, setFormData] = useState({
+        basicInfo: null as BasicInfoFormData | null,
+        auth: null as AuthFormData | null,
+        dataSchema: null as SchemaFormData | null
+    });
+    const [nextDisabled, setNextDisabled] = useState(false);
     const [activeStep, setActiveStep] = useState(0);
+
+    const [restApiIntegration, { isLoading }] = useRestApiIntegrationMutation();
+    const [updateRestApiIntegration, { isLoading: isUpdating }] = useUpdateRestAPIIntegrationMutation();
+    const { data: fetchedData, isLoading: isFetching } = useGetRestAPIIntegrationByIdQuery(id!, { skip: !isEditMode });
+
+    // Populate form when fetchedData changes
+    useEffect(() => {
+        if (isEditMode && fetchedData) {
+            setFormData({
+                basicInfo: {
+                    integrationName: fetchedData.name,
+                    dataFormat: fetchedData.dataFormat,
+                    updateFrequency: fetchedData.updateFrequency,
+                    baseUrl: fetchedData.url,
+                    restMethod: fetchedData.method,
+                    queryParams: {
+                        limit: { enabled: !!fetchedData.queryParams?.limit, value: fetchedData.queryParams?.limit || '' },
+                        offset: { enabled: !!fetchedData.queryParams?.offset, value: fetchedData.queryParams?.offset || '' }
+                    },
+                    environment: fetchedData.environment,
+                    isActive: fetchedData.status === 'active',
+                },
+                auth: {
+                    authMethod: fetchedData.authentication?.authenticationType,
+                    grantType: fetchedData.authentication?.grantType,
+                    clientId: fetchedData.authentication?.clientId,
+                    clientSecret: fetchedData.authentication?.clientSecret,
+                    redirectUri: fetchedData.authentication?.redirectUri,
+                },
+                dataSchema: {
+                    resourceName: fetchedData.schema?.resourceName,
+                    endpointPath: fetchedData.schema?.endpointPath,
+                    fields: fetchedData.schema?.fieldDetails?.map(field => ({
+                        name: field.name,
+                        type: field.type,
+                        description: field.description,
+                        required: field.isRequired
+                    })) || []
+                }
+            });
+        }
+    }, [isEditMode, fetchedData]);
+
+    // Check if the current step is valid
+    const isCurrentStepValid = () => {
+        switch (activeStep) {
+            case 0:
+                return basicInfoRef.current?.isValid() || false;
+            case 1:
+                return authRef.current?.isValid() || false;
+            case 2:
+                return schemaRef.current?.isValid() || false;
+            case 3:
+                return true;
+            default:
+                return true;
+        }
+    };
+
+    // Update next button state when active step changes
+    React.useEffect(() => {
+        const checkValidity = () => {
+            setNextDisabled(!isCurrentStepValid());
+        };
+        checkValidity();
+        const intervalId = setInterval(checkValidity, 500);
+        return () => clearInterval(intervalId);
+    }, [activeStep]);
+
+    const handleNext = async () => {
+        const lastStep = activeStep === steps.length - 1;
+        if (lastStep) {
+            const payload = {
+                dataFormat: formData.basicInfo?.dataFormat,
+                updateFrequency: formData.basicInfo?.updateFrequency,
+                advanceOptions: 'caching',
+                name: formData.basicInfo?.integrationName,
+                url: formData.basicInfo?.baseUrl,
+                method: formData.basicInfo?.restMethod,
+                body: {},
+                queryParams: {
+                    limit: formData.basicInfo?.queryParams.limit.enabled ? formData.basicInfo?.queryParams.limit.value : null,
+                    offset: formData.basicInfo?.queryParams.offset.enabled ? formData.basicInfo?.queryParams.offset.value : null
+                },
+                headerParams: {
+                    "Content-Type": "application/json"
+                },
+                environment: formData.basicInfo?.environment,
+                status: formData.basicInfo?.isActive ? 'active' : 'inactive',
+                authentication: {
+                    name: formData.auth?.authMethod,
+                    authenticationType: formData.auth?.authMethod,
+                    grantType: formData.auth?.grantType,
+                    clientId: formData.auth?.clientId,
+                    clientSecret: formData.auth?.clientSecret,
+                    tokenUrl: formData.auth?.tokenUrl,
+                    redirectUri: formData.auth?.redirectUri,
+                },
+                schema: {
+                    resourceName: formData.dataSchema?.resourceName,
+                    endpointPath: formData.dataSchema?.endpointPath,
+                    fieldDetails: formData.dataSchema?.fields?.map((field) => ({
+                        name: field.name,
+                        type: field.type,
+                        description: field.description,
+                        isRequired: field.required
+                    })) || []
+                }
+            }
+            try {
+                if (isEditMode) {
+                    console.log(payload, "check");
+                    await updateRestApiIntegration({ id: fetchedData?.id, data: payload });
+                    showSnackbar("Integration updated successfully", "", "success");
+                } else {
+                    await restApiIntegration(payload);
+                    showSnackbar("Integration created successfully", "You can now use this integration in your workflows", "success");
+                }
+                navigate('/integration-catalog');
+            } catch (error) {
+                showSnackbar("Error saving integration", "Please try again", "error");
+            }
+        }
+        if (activeStep === 0) {
+            setFormData(prev => ({
+                ...prev,
+                basicInfo: basicInfoRef.current?.getData() || null
+            }));
+        }
+        if (activeStep === 1) {
+            setFormData(prev => ({
+                ...prev,
+                auth: authRef.current?.getData() || null
+            }));
+        }
+        if (activeStep === 2) {
+            setFormData(prev => ({
+                ...prev,
+                dataSchema: schemaRef.current?.getData() || null
+            }));
+        }
+        setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+    };
 
     const renderStepContent = (step: number) => {
         switch (step) {
             case 0:
-                return <BasicInfo />;
+                return <BasicInfo ref={basicInfoRef} initialValues={formData.basicInfo} />;
             case 1:
-                return <Authentication />;
+                return <Authentication ref={authRef} initialValues={formData.auth} />;
             case 2:
-                return <DataSchema />;
+                return <DataSchema ref={schemaRef} initialValues={formData.dataSchema} />;
             case 3:
-                return <Review />;
+                return <Review
+                    basicInfo={formData.basicInfo}
+                    auth={formData.auth}
+                    dataSchema={formData.dataSchema}
+                />;
             default:
-                return <BasicInfo />;
+                return <BasicInfo ref={basicInfoRef} initialValues={formData.basicInfo} />;
         }
     };
 
@@ -246,10 +222,28 @@ const RestApiIntegration = () => {
                     </Stepper>
                 </Box>
                 <Box sx={{ p: 4, borderRadius: 2, border: '1px solid #E5E7EB', bgcolor: '#FFFFFF', boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)' }}>
-                    {renderStepContent(activeStep)}
+                    {isEditMode && isFetching ? (
+                        <Typography>Loading...</Typography>
+                    ) : (
+                        renderStepContent(activeStep)
+                    )}
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-                        <Button variant="outlined" sx={{ mr: 2 }} onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}>Previous</Button>
-                        <Button variant="contained" color="primary" onClick={() => setActiveStep((prev) => Math.min(prev + 1, steps.length - 1))}>Next</Button>
+                        <Button
+                            variant="outlined"
+                            sx={{ mr: 2 }}
+                            onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
+                            disabled={activeStep === 0}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleNext}
+                            disabled={nextDisabled || isLoading || isUpdating || (isEditMode && isFetching)}
+                        >
+                            {activeStep === steps.length - 1 ? (isEditMode ? 'Update' : 'Finish') : 'Next'}
+                        </Button>
                     </Box>
                 </Box>
             </Box>
